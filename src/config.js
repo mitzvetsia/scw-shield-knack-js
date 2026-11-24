@@ -88,8 +88,11 @@ window.SCW.CONFIG = window.SCW.CONFIG || {
   // Make scenario should:
   //   1. POST /contracts to eSignatures with template_id, the
   //      placeholder_fields array built from `placeholders`, and TWO
-  //      signers — triggeredBy as signing_order 1 (SCW), signer as
-  //      signing_order 2 (the client).
+  //      signers — micah.shearer@getscw.com as signing_order 1 with
+  //      auto_sign "yes" (SCW is countersigned automatically, so the
+  //      contract never waits on us), and `signer` as signing_order 2.
+  //      `triggeredBy` is carried for the audit trail — who clicked the
+  //      button — not as a signer.
   //   2. Set metadata to "Company ID: <knackRecordId>" (msa) or
   //      "Site ID: <knackRecordId>" (clf), matching the
   //      "Project ID: …,Proposal ID: …" convention already used on
@@ -138,7 +141,7 @@ window.SCW.CONFIG = window.SCW.CONFIG || {
 // of fingerprinting the DOM.
 (function () {
   'use strict';
-  window.SCW.BUILD = '2026-11-24 MSA strip + Make 21.05 wired (test mode)';
+  window.SCW.BUILD = '2026-11-24 MSA strip; SCW countersigns automatically (test mode)';
   try {
     var src = (document.currentScript && document.currentScript.src) || '';
     if (!src) {

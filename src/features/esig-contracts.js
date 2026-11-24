@@ -299,8 +299,9 @@
         '<div class="scw-esig-modal__head">' + esc(level.createLabel) + '</div>' +
         '<div class="scw-esig-modal__body">' +
           '<p class="scw-esig-modal__intro">Anything already on this page is ' +
-            'filled in. Check it, complete the rest, and this goes out for ' +
-            'signature — you sign first, then the client.</p>' +
+            'filled in. Check it, complete the rest, and it goes straight to ' +
+            'the client for signature — SCW is countersigned automatically, ' +
+            'so nothing waits on us. Check the details before you send.</p>' +
           rows +
           '<div class="scw-esig-modal__sub">Client signer</div>' +
           '<div class="scw-esig-f">' +
