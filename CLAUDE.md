@@ -40,10 +40,21 @@ src/
   util.js                     # SCW.onViewRender / onSceneRender / currentUser / esc
   features/
     esig-contracts.js         # eSignatures MSA + Covered Location Form strip
+knack-snippets/
+  loader.snippet.js           # goes in the Builder JS panel — NOT in the bundle
+tests/
+  esig-contracts/             # jsdom smoke tests against real captured markup
 build.sh                      # cat src/ → esbuild --minify → dist/shield-bundle.js
 save.sh "msg"                 # build → commit → push → purge + warm jsDelivr
 dist/shield-bundle.js         # built artifact (committed — jsDelivr serves it)
 ```
+
+## Loading the bundle into Knack
+
+Knack Builder → Settings → API & Code → **JavaScript** takes **JavaScript, not
+HTML**. A `<script src="…">` tag pasted there is a syntax error and silently
+kills every script on the page. Use `knack-snippets/loader.snippet.js`, which
+creates the element in JS. Bump its `SHA` and re-paste to move to a new build.
 
 ## Build and deploy
 
@@ -84,8 +95,12 @@ a release" — rebuild, push, done.
 - **ES5-friendly** (`var`, `function`). jQuery `$` is global, provided by Knack.
 - **Escape everything** you inject through `SCW.esc` — it all carries record data.
 - **Button order**: destructive first, primary rightmost (Cancel | Send).
-- **Read record data from the rendered DOM** (`.kn-detail.field_XXX
-  .kn-detail-body`), not the Knack REST API. See Security below.
+- **Read record data from the rendered DOM**, not the Knack REST API. See
+  Security below. ⚠️ Views set to **label-none** (which `view_511` is) render
+  fields as `<div class="field_600">` with **no `kn-detail` class**, so a
+  selector must fall back to the bare `.field_XXX` class. `detailCell()` in
+  `esig-contracts.js` is the reference; `tests/esig-contracts/` pins it against
+  real captured markup.
 
 ## Knack reference — the objects this app's features touch
 
@@ -114,9 +129,12 @@ view-company-details (`view_511` details + `view_512` sites table).
 
 ## Working on this repo
 
-This is a copy-paste-and-modify codebase, not a design space. There is no test
-framework, no linter and no type system; features are verified manually against
-the live app. Bias toward producing a diff:
+This is a copy-paste-and-modify codebase, not a design space. There is no
+linter and no type system, and features are ultimately verified against the live
+app — but `tests/` holds plain-node jsdom smoke tests built from real captured
+markup (`node tests/esig-contracts/test-render.js`, after `cd tests && npm
+install`). Add one next to anything you change there and keep them green. Bias
+toward producing a diff:
 
 1. Copy the nearest existing feature and match its layout, naming and event
    namespacing. Do not redesign the module shape.
