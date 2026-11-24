@@ -108,12 +108,31 @@ a release" — rebuild, push, done.
 | Object | Name | Notes |
 |---|---|---|
 | `object_26` | GLOBAL: COMPANY | `field_208` name, `field_333` Monitoring Type, `field_600` MSA ID, `field_601` Signed MSA |
-| `object_27` | REMOTE GUARDING: SERVICE | per-site; `field_209` name, `field_210` address, `field_226` cameras, `field_231` → company, `field_334` Monitoring Type, `field_319` STATUS |
+| `object_27` | REMOTE GUARDING: SERVICE | per-site; `field_209` name, `field_210` address, `field_226` cameras, `field_231` → company, `field_334` Monitoring Type, `field_319` STATUS, `field_604` CLF ID, `field_605` Signed CLF |
 | `object_29` | Monitored GG Callees | call list: name, email, phone, **password**, call-tree order 1–7 |
 | `object_24/25` | Subscriptions / line items | where fees live — `field_194` per-license price, `field_198` monthly total |
 
 Scenes: `scene_185` remote-monitoring (company list), `scene_187`
-view-company-details (`view_511` details + `view_512` sites table).
+view-company-details (`view_511` details + `view_512` sites table), `scene_189`
+site-details (`view_514` the site, `view_575` its company, `view_592` the PoC,
+`view_529` the call tree).
+
+### Reading fields off a Knack view — two traps
+
+**Label mode changes the markup.** `view_511` is label-NONE, so a field is one
+`<div class="field_600">` with no `kn-detail` class. `view_514` is label-TOP, so
+each field renders **twice** — a `.kn-label-top.field_X` carrying only the
+label, then a bare `.field_X` carrying the value. A selector that takes the
+first match finds a cell with no `.kn-detail-body` in it. `detailCells()` /
+`detailBody()` in `esig-contracts.js` handle both; hiding a field means hiding
+every cell for it, or a heading is left floating over nothing.
+
+**Multi-line values are `<br>`-separated**, and `textContent` runs them
+together ("2417 Third Avenue6th Floor"). Use `bodyText()`.
+
+A field spec may name another view on the same scene —
+`"view_575:field_208"` — which is how the site page reads its company name and
+its PoC. `tests/esig-contracts/` pins all of this against real captured markup.
 
 ## Styling other people's scenes
 

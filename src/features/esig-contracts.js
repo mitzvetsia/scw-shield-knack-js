@@ -99,38 +99,47 @@
     },
 
     clf: {
-      enabled:   false,               // ← flip on once the Builder fields exist
+      enabled:   true,
       kind:      'clf',
       label:     'Covered Location Form',
-      viewId:    '',                  // ← site details view
+      viewId:    'view_514',          // scene_189 · Site details (object_27)
       object:    'object_27',
-      F_ID:      '',                  // ← Contract ID field on object_27
-      F_FILE:    '',                  // ← Signed CLF file field
-      F_TYPE:    'field_334',         // Monitoring Type (site)
-      F_NAME:    'field_209',         // Monitored Site Name
+      F_ID:      'field_604',         // Covered Location Form ID
+      F_FILE:    'field_605',         // Signed Covered Location Form
+      // Monitoring Type is not rendered on the site page, and the rule is
+      // "every site needs a form" regardless of who monitors it — so the
+      // warning is driven by the form being missing, not by Hakimo.
+      F_TYPE:    '',
+      F_NAME:    'field_209',         // Site Name
+      warnWhen:  'missing',
       templateKey: 'ESIG_TEMPLATE_CLF',
       webhookKey:  'MAKE_ESIG_CLF_WEBHOOK',
-      createLabel: 'Create Covered Location Form',
-      openLabel:   'Open CLF in eSignatures',
-      fileLabel:   'Signed CLF (PDF)',
-      warnBody:    'This is a Hakimo site with no Covered Location Form on ' +
-                   'file. It is not under contract.',
+      createLabel: 'Send Covered Location Form',
+      openLabel:   'Open form in eSignatures',
+      fileLabel:   'Signed form (PDF)',
+      warnHead:    'NO COVERED LOCATION FORM.',
+      warnBody:    'This site is not under contract until one is signed. ' +
+                   'Every site needs its own, including sites for a client ' +
+                   'who has already signed the master agreement.',
+      // The site page carries the PoC block, so the signer is already known.
+      signerFrom: { name: 'view_592:field_238', email: 'view_592:field_241' },
       modal: [
-        { key: 'client_name',               label: 'Client legal name',   from: null,        required: true },
-        { key: 'site_address',              label: 'Site address',        from: 'field_210', required: true },
-        { key: 'camera_count',              label: 'Monitored cameras',   from: 'field_226', required: true },
-        { key: 'coverage_window',           label: 'Coverage window',     from: 'field_225', required: true },
-        { key: 'site_profile',              label: 'Site profile',        from: null,        required: true,
+        { key: 'client_name',               label: 'Client legal name',   from: 'view_575:field_208', required: true },
+        { key: 'site_address',              label: 'Site address',        from: 'field_210',          required: true },
+        { key: 'camera_count',              label: 'Monitored cameras',   from: null,                 required: true },
+        { key: 'coverage_window',           label: 'Coverage window',     from: null,                 required: true,
+          hint: 'e.g. 12/7 exterior, or 24/7.' },
+        { key: 'site_profile',              label: 'Site profile',        from: null,                 required: true,
           hint: 'Low traffic or High traffic.' },
-        { key: 'onboarding_fee',            label: 'Onboarding fee',      from: null,        required: true },
-        { key: 'monitoring_fee_per_camera', label: 'Fee per camera / mo', from: null,        required: true },
-        { key: 'monthly_total',             label: 'Monthly total',       from: null,        required: true },
-        { key: 'initial_term',              label: 'Initial term',        from: null,        required: true,
-          hint: 'e.g. 12 months.' },
-        { key: 'billing_interval',          label: 'Billing interval',    from: null,        required: true,
-          hint: 'e.g. Monthly, in advance.' },
-        { key: 'replacement_cap',           label: 'Replacement cap',     from: null,        required: true,
-          hint: 'Section 3.4. $1,400 unless agreed otherwise.' }
+        { key: 'onboarding_fee',            label: 'Onboarding fee',      from: null,                 required: true },
+        { key: 'monitoring_fee_per_camera', label: 'Fee per camera / mo', from: null,                 required: true },
+        { key: 'monthly_total',             label: 'Monthly total',       from: 'field_203',          required: true },
+        { key: 'initial_term',              label: 'Initial term',        from: null,                 required: true,
+          def: '12 months' },
+        { key: 'billing_interval',          label: 'Billing interval',    from: null,                 required: true,
+          def: 'Monthly, in advance' },
+        { key: 'replacement_cap',           label: 'Replacement cap',     from: null,                 required: true,
+          def: '$1,400', hint: 'Section 3.4 of the Contract.' }
       ]
     }
   };
@@ -142,20 +151,62 @@
 
   var esc = SCW.esc;
 
-  function detailCell(view, fieldKey) {
-    if (!view || !fieldKey) return null;
-    return view.querySelector('.kn-detail.' + fieldKey) ||
-           view.querySelector('.' + fieldKey);
+  // A field can render MORE THAN ONCE on one view. In label-top mode
+  // (view_514) Knack emits `.kn-label-top.field_X` holding only the label,
+  // then a separate `.field_X` holding the value — so taking the first
+  // match finds a cell with no body in it. Collect them all.
+  function detailCells(view, fieldKey) {
+    if (!view || !fieldKey) return [];
+    return [].slice.call(
+      view.querySelectorAll('.kn-detail.' + fieldKey + ', .' + fieldKey)
+    );
+  }
+
+  function hasField(view, fieldKey) {
+    return detailCells(view, fieldKey).length > 0;
   }
 
   function detailBody(view, fieldKey) {
-    var cell = detailCell(view, fieldKey);
-    return cell ? cell.querySelector('.kn-detail-body') : null;
+    var cells = detailCells(view, fieldKey);
+    for (var i = 0; i < cells.length; i++) {
+      var body = cells[i].querySelector('.kn-detail-body');
+      if (body) return body;
+    }
+    return null;
+  }
+
+  // Multi-line values (a site address) are <br>-separated in the DOM, and
+  // textContent would run them together — "2417 Third Avenue6th Floor".
+  function bodyText(body) {
+    if (!body) return '';
+    var out = '';
+    (function walk(n) {
+      for (var i = 0; i < n.childNodes.length; i++) {
+        var c = n.childNodes[i];
+        if (c.nodeType === 3) out += c.nodeValue;
+        else if (c.nodeName === 'BR') out += ', ';
+        else walk(c);
+      }
+    })(body);
+    return out.replace(/\s+/g, ' ')
+              .replace(/\s*,\s*/g, ', ')
+              .replace(/^[,\s]+|[,\s]+$/g, '')
+              .trim();
   }
 
   function readDetail(view, fieldKey) {
-    var body = detailBody(view, fieldKey);
-    return body ? (body.textContent || '').trim() : '';
+    return bodyText(detailBody(view, fieldKey));
+  }
+
+  // A field spec is either "field_210" (the level's own view) or
+  // "view_575:field_208" (another view on the same scene — the site page
+  // carries the company name, the PoC and the site record side by side).
+  function readSpec(ownView, spec) {
+    if (!spec) return '';
+    var parts = String(spec).split(':');
+    if (parts.length < 2) return readDetail(ownView, parts[0]);
+    var other = document.getElementById(parts[0]);
+    return other ? readDetail(other, parts[1]) : '';
   }
 
   // File fields render as an <a href> to the stored asset.
@@ -280,6 +331,8 @@
   function openModal(level, state) {
     injectCss();
 
+    var sig = state.signer || { name: '', email: '' };
+
     var rows = level.modal.map(function (f) {
       var pre = state.prefill[f.key] || '';
       return '<div class="scw-esig-f' + (pre ? ' scw-esig-f--prefilled' : '') + '">' +
@@ -304,13 +357,15 @@
             'so nothing waits on us. Check the details before you send.</p>' +
           rows +
           '<div class="scw-esig-modal__sub">Client signer</div>' +
-          '<div class="scw-esig-f">' +
+          '<div class="scw-esig-f' + (sig.name ? ' scw-esig-f--prefilled' : '') + '">' +
             '<label class="scw-esig-f__lab" for="scw-esig-signer-name">Signer name</label>' +
-            '<input id="scw-esig-signer-name" data-k="__signer_name" type="text">' +
+            '<input id="scw-esig-signer-name" data-k="__signer_name" type="text" ' +
+              'value="' + esc(sig.name) + '">' +
           '</div>' +
-          '<div class="scw-esig-f">' +
+          '<div class="scw-esig-f' + (sig.email ? ' scw-esig-f--prefilled' : '') + '">' +
             '<label class="scw-esig-f__lab" for="scw-esig-signer-email">Signer email</label>' +
-            '<input id="scw-esig-signer-email" data-k="__signer_email" type="email">' +
+            '<input id="scw-esig-signer-email" data-k="__signer_email" type="email" ' +
+              'value="' + esc(sig.email) + '">' +
           '</div>' +
           '<div class="scw-esig-modal__err" hidden></div>' +
           '<div class="scw-esig-modal__status" hidden></div>' +
@@ -471,11 +526,11 @@
     // The Builder dependency: without the id field on the view we cannot
     // tell "no contract" from "field not rendered", so say so instead of
     // offering a button that might duplicate a live contract.
-    if (!detailCell(view, level.F_ID)) {
+    if (!hasField(view, level.F_ID)) {
+      var need = [level.F_ID, level.F_FILE, level.F_TYPE].filter(Boolean).join(', ');
       wrap.innerHTML =
         '<div class="scw-esig__miss"><strong>' + esc(level.label) + ' status unavailable.</strong> ' +
-        'Add ' + esc(level.F_ID) + (level.F_FILE ? ', ' + esc(level.F_FILE) : '') +
-        ' and ' + esc(level.F_TYPE) + ' to ' + esc(level.viewId) +
+        'Add ' + esc(need) + ' to ' + esc(level.viewId) +
         ' in the Knack Builder and this panel will light up.</div>';
       view.parentNode.insertBefore(wrap, view.nextSibling);
       return;
@@ -483,10 +538,15 @@
 
     var contractId = readDetail(view, level.F_ID);
     var fileHref   = readDetailHref(view, level.F_FILE);
-    var type       = readDetail(view, level.F_TYPE);
+    var type       = level.F_TYPE ? readDetail(view, level.F_TYPE) : '';
     var name       = readDetail(view, level.F_NAME);
     var isHakimo   = type.toLowerCase().indexOf(HAKIMO) !== -1;
     var hasAny     = !!(contractId || fileHref);
+    // 'hakimo' warns only for Hakimo accounts (the master agreement is a
+    // Hakimo requirement); 'missing' warns for any record without a
+    // document, which is the rule at site level.
+    var warn       = !hasAny &&
+                     (level.warnWhen === 'missing' || isHakimo);
 
     // State drives the pill, not the button list — one source of truth.
     var state = fileHref   ? { key: 'signed',  label: 'Signed' }
@@ -495,12 +555,12 @@
 
     var html = '';
 
-    if (isHakimo && !hasAny) {
+    if (warn) {
       html +=
         '<div class="scw-esig__warn">' +
           ICON_WARN +
           '<div>' +
-            '<div class="scw-esig__warn-head">' + esc(WARN_HEAD) + '</div>' +
+            '<div class="scw-esig__warn-head">' + esc(level.warnHead || WARN_HEAD) + '</div>' +
             '<div class="scw-esig__warn-body">' + esc(level.warnBody) + '</div>' +
           '</div>' +
         '</div>';
@@ -550,9 +610,11 @@
     view.parentNode.insertBefore(wrap, view.nextSibling);
 
     if (HIDE_SOURCE_ROWS) {
-      [level.F_ID, level.F_FILE, level.F_TYPE].forEach(function (fk) {
-        var cell = detailCell(view, fk);
-        if (cell) cell.style.display = 'none';
+      // Hide EVERY cell for these fields: in label-top mode the label and
+      // the value are separate siblings, so hiding one leaves a stray
+      // "Covered Location Form ID" heading over nothing.
+      [level.F_ID, level.F_FILE, level.F_TYPE].filter(Boolean).forEach(function (fk) {
+        detailCells(view, fk).forEach(function (cell) { cell.style.display = 'none'; });
       });
     }
 
@@ -561,11 +623,24 @@
       createBtn.addEventListener('click', function () {
         var prefill = {};
         level.modal.forEach(function (f) {
-          if (f.from) prefill[f.key] = readDetail(view, f.from);
+          var v = f.from ? readSpec(view, f.from) : '';
+          prefill[f.key] = v || f.def || '';
         });
-        // The MSA names the client; the CLF names the site's client.
+        // The MSA names the client on its own view; at site level the
+        // company name lives on a different view of the same scene.
         if (!prefill.client_name && name) prefill.client_name = name;
-        openModal(level, { prefill: prefill, recordId: recordId(level.viewId) });
+
+        var signer = { name: '', email: '' };
+        if (level.signerFrom) {
+          signer.name  = readSpec(view, level.signerFrom.name);
+          signer.email = readSpec(view, level.signerFrom.email);
+        }
+
+        openModal(level, {
+          prefill:  prefill,
+          signer:   signer,
+          recordId: recordId(level.viewId)
+        });
       });
     }
   }
