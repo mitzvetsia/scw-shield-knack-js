@@ -44,6 +44,31 @@
   // Loud banner copy. Reworded here, not in the logic.
   var WARN_HEAD = 'HEY — GET THIS SIGNED.';
 
+  // Inline SVGs — no icon font dependency, inherits currentColor.
+  var SVG_OPEN = '<svg class="scw-esig__warn-bang" viewBox="0 0 24 24" width="17" height="17" ' +
+                 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+                 'stroke-linejoin="round">';
+  var ICON_WARN = SVG_OPEN +
+    '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>' +
+    '<line x1="12" y1="9" x2="12" y2="13"></line>' +
+    '<line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+  var ICON_EXTERNAL =
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>' +
+    '<polyline points="15 3 21 3 21 9"></polyline>' +
+    '<line x1="10" y1="14" x2="21" y2="3"></line></svg>';
+  var ICON_DOC =
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' +
+    '<polyline points="14 2 14 8 20 8"></polyline></svg>';
+  var ICON_PLUS =
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<line x1="12" y1="5" x2="12" y2="19"></line>' +
+    '<line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+
   var LEVELS = {
     msa: {
       enabled:   true,
@@ -166,25 +191,53 @@
     var s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = [
-      '.scw-esig { margin: 10px 0 16px; font: 13px/1.45 system-ui, -apple-system, sans-serif; }',
-      '.scw-esig__warn { display: flex; gap: 12px; align-items: flex-start;',
-      '  background: #fef2f2; border: 2px solid #dc2626; border-left-width: 8px;',
-      '  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }',
-      '.scw-esig__warn-bang { font-size: 26px; line-height: 1; }',
-      '.scw-esig__warn-head { font-size: 17px; font-weight: 800; color: #991b1b;',
-      '  letter-spacing: .3px; margin-bottom: 3px; }',
-      '.scw-esig__warn-body { color: #7f1d1d; font-size: 13px; }',
-      '.scw-esig__row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }',
-      '.scw-esig__btn { display: inline-flex; align-items: center; gap: 6px;',
+      '.scw-esig { margin: 14px 0 18px; max-width: 760px;',
+      '  font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }',
+      // ── warning ──
+      '.scw-esig__warn { display: flex; gap: 11px; align-items: flex-start;',
+      '  background: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #e11d48;',
+      '  border-radius: 7px; padding: 11px 14px; margin-bottom: 10px; }',
+      '.scw-esig__warn-bang { flex: none; width: 17px; height: 17px; margin-top: 1px; color: #e11d48; }',
+      '.scw-esig__warn-head { font-size: 13px; font-weight: 700; color: #9f1239;',
+      '  letter-spacing: .02em; margin-bottom: 2px; }',
+      '.scw-esig__warn-body { color: #9f1239; font-size: 12.5px; opacity: .85; }',
+      // ── card ──
+      '.scw-esig__card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;',
+      '  overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,.04); }',
+      '.scw-esig__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;',
+      '  padding: 9px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }',
+      '.scw-esig__title { font-size: 11px; font-weight: 700; letter-spacing: .07em;',
+      '  text-transform: uppercase; color: #475569; }',
+      '.scw-esig__spacer { flex: 1 1 auto; }',
+      // status pill
+      '.scw-esig__pill { display: inline-flex; align-items: center; gap: 6px;',
+      '  padding: 3px 9px 3px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600;',
+      '  border: 1px solid transparent; white-space: nowrap; }',
+      '.scw-esig__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }',
+      '.scw-esig__pill--missing { background: #fff1f2; color: #be123c; border-color: #fecdd3; }',
+      '.scw-esig__pill--pending { background: #fffbeb; color: #b45309; border-color: #fde68a; }',
+      '.scw-esig__pill--signed  { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }',
+      // monitoring-type chip
+      '.scw-esig__chip { display: inline-flex; align-items: center; padding: 3px 9px;',
+      '  border-radius: 999px; font-size: 11.5px; font-weight: 600; color: #334155;',
+      '  background: #eef2f6; border: 1px solid #e2e8f0; white-space: nowrap; }',
+      // body + buttons
+      '.scw-esig__body { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;',
+      '  padding: 11px 14px; }',
+      '.scw-esig__btn { display: inline-flex; align-items: center; gap: 7px;',
       '  padding: 7px 14px; border-radius: 6px; border: 1px solid #0f4c75;',
       '  background: #0f4c75; color: #fff !important; font-weight: 600;',
-      '  font-size: 12.5px; cursor: pointer; text-decoration: none !important; }',
-      '.scw-esig__btn:hover { background: #0d3f61; }',
+      '  font-size: 12.5px; line-height: 1.2; cursor: pointer;',
+      '  text-decoration: none !important; transition: background .12s ease; }',
+      '.scw-esig__btn:hover { background: #0d3f61; color: #fff !important; }',
+      '.scw-esig__btn:focus-visible { outline: 2px solid #0f4c75; outline-offset: 2px; }',
       '.scw-esig__btn--ghost { background: #fff; color: #0f4c75 !important; }',
-      '.scw-esig__btn--ghost:hover { background: #eff6ff; }',
+      '.scw-esig__btn--ghost:hover { background: #eff6ff; color: #0f4c75 !important; }',
+      '.scw-esig__btn svg { flex: none; }',
       '.scw-esig__note { color: #64748b; font-size: 12px; }',
-      '.scw-esig__miss { background: #fffbeb; border: 1px solid #f59e0b;',
-      '  border-radius: 6px; padding: 10px 12px; color: #92400e; font-size: 12.5px; }',
+      '.scw-esig__miss { background: #fffbeb; border: 1px solid #fde68a;',
+      '  border-left: 4px solid #f59e0b; border-radius: 7px; padding: 11px 14px;',
+      '  color: #92400e; font-size: 12.5px; }',
       // modal
       '.scw-esig-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.55);',
       '  z-index: 100000; display: flex; align-items: center; justify-content: center; padding: 18px; }',
@@ -434,12 +487,17 @@
     var isHakimo   = type.toLowerCase().indexOf(HAKIMO) !== -1;
     var hasAny     = !!(contractId || fileHref);
 
+    // State drives the pill, not the button list — one source of truth.
+    var state = fileHref   ? { key: 'signed',  label: 'Signed' }
+              : contractId ? { key: 'pending', label: 'Out for signature' }
+                           : { key: 'missing', label: 'Not signed' };
+
     var html = '';
 
     if (isHakimo && !hasAny) {
       html +=
         '<div class="scw-esig__warn">' +
-          '<div class="scw-esig__warn-bang">&#9888;</div>' +
+          ICON_WARN +
           '<div>' +
             '<div class="scw-esig__warn-head">' + esc(WARN_HEAD) + '</div>' +
             '<div class="scw-esig__warn-body">' + esc(level.warnBody) + '</div>' +
@@ -451,26 +509,41 @@
     if (contractId) {
       btns.push('<a class="scw-esig__btn" target="_blank" rel="noopener" href="' +
                 esc(cfg('ESIG_CONTRACT_URL_BASE') + contractId) + '">' +
-                esc(level.openLabel) + '</a>');
+                ICON_EXTERNAL + esc(level.openLabel) + '</a>');
     }
     if (fileHref) {
       btns.push('<a class="scw-esig__btn scw-esig__btn--ghost" target="_blank" rel="noopener" href="' +
-                esc(fileHref) + '">' + esc(level.fileLabel) + '</a>');
+                esc(fileHref) + '">' + ICON_DOC + esc(level.fileLabel) + '</a>');
     }
     if (!hasAny) {
       btns.push('<button type="button" class="scw-esig__btn scw-esig-create">' +
-                esc(level.createLabel) + '</button>');
+                ICON_PLUS + esc(level.createLabel) + '</button>');
     }
     if (contractId && !fileHref) {
-      btns.push('<span class="scw-esig__note">Out for signature — no signed PDF on record yet.</span>');
+      btns.push('<span class="scw-esig__note">Waiting on signatures — no signed PDF on record yet.</span>');
     }
 
-    html += '<div class="scw-esig__row">' + btns.join('') + '</div>';
+    html +=
+      '<div class="scw-esig__card">' +
+        '<div class="scw-esig__head">' +
+          '<span class="scw-esig__title">' + esc(level.label) + '</span>' +
+          '<span class="scw-esig__pill scw-esig__pill--' + state.key + '">' +
+            '<span class="scw-esig__dot"></span>' + esc(state.label) +
+          '</span>' +
+          '<span class="scw-esig__spacer"></span>' +
+          // The monitoring type renders on this view as a bare, unlabelled
+          // line. Surfacing it here as a chip is why the raw row is hidden
+          // below — otherwise the value reads as orphaned text.
+          (type ? '<span class="scw-esig__chip">' + esc(type) + '</span>' : '') +
+        '</div>' +
+        '<div class="scw-esig__body">' + btns.join('') + '</div>' +
+      '</div>';
+
     wrap.innerHTML = html;
     view.parentNode.insertBefore(wrap, view.nextSibling);
 
     if (HIDE_SOURCE_ROWS) {
-      [level.F_ID, level.F_FILE].forEach(function (fk) {
+      [level.F_ID, level.F_FILE, level.F_TYPE].forEach(function (fk) {
         var cell = detailCell(view, fk);
         if (cell) cell.style.display = 'none';
       });

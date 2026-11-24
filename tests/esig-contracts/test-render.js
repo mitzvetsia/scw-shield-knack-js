@@ -168,5 +168,25 @@ check('wrong app id → every feature stands down', () => {
   assert.strictEqual(Object.keys(handlers).length, 0, 'should bind nothing in the wrong app');
 });
 
+check('status pill reflects each state', () => {
+  const missing = run({});
+  assert.ok(missing.querySelector('.scw-esig__pill--missing'), 'nothing on file → missing');
+
+  const pending = run({ msaId: 'abc12345-0000-1111-2222-333344445555' });
+  assert.ok(pending.querySelector('.scw-esig__pill--pending'), 'id but no file → pending');
+
+  const signed = run({ fileHref: 'https://example.com/x.pdf' });
+  assert.ok(signed.querySelector('.scw-esig__pill--signed'), 'file on record → signed');
+});
+
+check('monitoring type is surfaced as a chip and its raw row hidden', () => {
+  const doc = run({ type: 'Hakimo' });
+  const chip = doc.querySelector('.scw-esig__chip');
+  assert.ok(chip, 'chip should render');
+  assert.strictEqual(chip.textContent.trim(), 'Hakimo');
+  assert.strictEqual(doc.querySelector('.field_333').style.display, 'none',
+    'the orphaned bare-text row should be hidden once the chip shows it');
+});
+
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 process.exit(failures ? 1 : 0);
