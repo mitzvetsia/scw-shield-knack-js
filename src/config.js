@@ -112,7 +112,8 @@ window.SCW.CONFIG = window.SCW.CONFIG || {
   //
   // Until these are filled in the buttons still render, but report
   // "webhook not configured" instead of firing.
-  MAKE_ESIG_MSA_WEBHOOK: 'PLACEHOLDER',
+  // → Make scenario 21.05 | CONTRACTS | Shield MSA (id 5064363).
+  MAKE_ESIG_MSA_WEBHOOK: 'https://hook.us1.make.com/1qf5bc3lhtl37grbf0g4u2zale9madjo',
   MAKE_ESIG_CLF_WEBHOOK: 'PLACEHOLDER',
 
   // eSignatures.com template GUIDs (created 2026-11-24).
@@ -137,7 +138,7 @@ window.SCW.CONFIG = window.SCW.CONFIG || {
 // of fingerprinting the DOM.
 (function () {
   'use strict';
-  window.SCW.BUILD = '2026-11-24 initial — eSignatures MSA strip';
+  window.SCW.BUILD = '2026-11-24 MSA strip + Make 21.05 wired (test mode)';
   try {
     var src = (document.currentScript && document.currentScript.src) || '';
     if (!src) {
