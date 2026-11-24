@@ -20,6 +20,7 @@ cat \
   src/config.js \
   src/util.js \
   src/features/esig-contracts.js \
+  src/features/page-polish.js \
   > "$TMP_BUNDLE"
 
 UNMIN_BYTES=$(wc -c < "$TMP_BUNDLE" | tr -d ' ')

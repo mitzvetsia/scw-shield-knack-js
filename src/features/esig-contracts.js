@@ -534,7 +534,13 @@
           // The monitoring type renders on this view as a bare, unlabelled
           // line. Surfacing it here as a chip is why the raw row is hidden
           // below — otherwise the value reads as orphaned text.
-          (type ? '<span class="scw-esig__chip">' + esc(type) + '</span>' : '') +
+          // Monitoring Type is a multi-select, so it can arrive as
+          // "Global Guardian, Hakimo". One chip per value reads far
+          // better than a single chip with a comma in it.
+          type.split(',').map(function (t) {
+            t = t.trim();
+            return t ? '<span class="scw-esig__chip">' + esc(t) + '</span>' : '';
+          }).join('') +
         '</div>' +
         '<div class="scw-esig__body">' + btns.join('') + '</div>' +
       '</div>';

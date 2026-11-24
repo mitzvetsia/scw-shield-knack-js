@@ -40,6 +40,7 @@ src/
   util.js                     # SCW.onViewRender / onSceneRender / currentUser / esc
   features/
     esig-contracts.js         # eSignatures MSA + Covered Location Form strip
+    page-polish.js            # per-scene typography, spacing and table styling
 knack-snippets/
   loader.snippet.js           # goes in the Builder JS panel — NOT in the bundle
 tests/
@@ -113,6 +114,14 @@ a release" — rebuild, push, done.
 
 Scenes: `scene_185` remote-monitoring (company list), `scene_187`
 view-company-details (`view_511` details + `view_512` sites table).
+
+## Styling other people's scenes
+
+`page-polish.js` restyles Knack's own markup. Every rule it writes is
+prefixed with a scene id from its `SCENES` list, because Knack reuses the same
+classes (`.kn-table`, `.kn-detail-body`, `.kn-title`) on every view in the app —
+an unscoped rule would reach scenes nobody reviewed. Adopt a scene by adding it
+to that list, never by dropping the prefix.
 
 ## Security & external services
 

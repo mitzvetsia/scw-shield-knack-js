@@ -188,5 +188,16 @@ check('monitoring type is surfaced as a chip and its raw row hidden', () => {
     'the orphaned bare-text row should be hidden once the chip shows it');
 });
 
+check('multi-select monitoring type becomes one chip per value', () => {
+  const doc = run({ type: 'Global Guardian, Hakimo' });
+  const chips = [...doc.querySelectorAll('.scw-esig__chip')].map((c) => c.textContent.trim());
+  assert.deepStrictEqual(chips, ['Global Guardian', 'Hakimo']);
+});
+
+check('a multi-select containing Hakimo still triggers the warning', () => {
+  const doc = run({ type: 'Global Guardian, Hakimo' });
+  assert.ok(doc.querySelector('.scw-esig__warn'), 'Hakimo anywhere in the list counts');
+});
+
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 process.exit(failures ? 1 : 0);
